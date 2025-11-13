@@ -9,7 +9,7 @@ class Setting(BaseSettings):
     
     DATABASE_URL: str = ""
     REDIS_HOST: str = ""
-    REDIS_PORT: int = ""
+    REDIS_PORT: str = "6379"
     
     SECRET_KEY: str = ""
     

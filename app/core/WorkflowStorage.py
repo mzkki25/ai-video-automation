@@ -13,7 +13,7 @@ class WorkflowStorage:
             import os
             cls._instance.redis_client = redis.Redis(
                 host=setting.REDIS_HOST,
-                port=setting.REDIS_PORT,
+                port=int(setting.REDIS_PORT),
                 decode_responses=True
             )
         return cls._instance
