@@ -1,0 +1,572 @@
+<!-- FILE: auth.html -->
+<!--
+Template: Authentication Page (Login & Sign Up)
+Purpose: User authentication with tabbed interface for login and signup
+
+Expected API endpoints:
+- POST /api/auth/login -> { username, password } -> { token, username }
+- POST /api/auth/signup -> { email, username, password } -> { token, username }
+
+Server context variables: None (standalone auth page)
+
+Security notes:
+- Store JWT token in localStorage only after successful auth
+- Never expose tokens in HTML/DOM
+- Implement rate limiting on backend
+- Use HTTPS in production
+
+Testing checklist:
+✓ Tab switching works with keyboard (Tab, Arrow keys)
+✓ Forms submit with Enter key
+✓ Error messages appear in aria-live regions
+✓ Password toggle works
+✓ Redirects to /dashboard on success
+✓ Works without JS (progressive enhancement)
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Login atau daftar untuk membuat video otomatis">
+    <title>Masuk - Video Creator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-primary-dark: #4f46e5;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --text: #0f172a;
+            --muted: #6b7280;
+            --radius: 14px;
+            --shadow: 0 6px 18px rgba(15,23,42,0.06);
+            --shadow-lg: 0 20px 40px rgba(15,23,42,0.12);
+            --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, #6b46ff 0%, #8b5cf6 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: var(--text);
+        }
+
+        .auth-container {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--color-primary);
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: none;
+            border: none;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--muted);
+            cursor: pointer;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
+
+        .tab[aria-selected="true"] {
+            color: var(--color-primary);
+        }
+
+        .tab[aria-selected="true"]::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-primary);
+        }
+
+        .tab:focus {
+            outline: 2px solid var(--color-primary);
+            outline-offset: 2px;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel[aria-hidden="false"] {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        input:invalid:not(:placeholder-shown) {
+            border-color: var(--danger);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 14px;
+        }
+
+        .password-toggle:hover {
+            color: var(--text);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-message {
+            background: #fee;
+            color: var(--danger);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 24px;
+            }
+
+            .logo h1 {
+                font-size: 24px;
+            }
+        }
+
+        @media (prefers-contrast: high) {
+            input {
+                border-width: 2px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="logo">
+            <h1><i data-lucide="video" style="width:32px;height:32px;vertical-align:middle;margin-right:8px;"></i>Video Creator</h1>
+            <p>Buat video promosi dalam hitungan menit</p>
+        </div>
+
+        <div role="tablist" class="tabs" aria-label="Pilihan autentikasi">
+            <button role="tab" 
+                    class="tab" 
+                    id="tab-login" 
+                    aria-selected="true" 
+                    aria-controls="panel-login"
+                    tabindex="0">
+                Masuk
+            </button>
+            <button role="tab" 
+                    class="tab" 
+                    id="tab-signup" 
+                    aria-selected="false" 
+                    aria-controls="panel-signup"
+                    tabindex="-1">
+                Daftar
+            </button>
+        </div>
+
+        <!-- Login Panel -->
+        <div role="tabpanel" 
+             id="panel-login" 
+             class="tab-panel" 
+             aria-labelledby="tab-login"
+             aria-hidden="false">
+            
+            <div class="error-message" id="login-error" role="alert" aria-live="polite"></div>
+
+            <form id="login-form" 
+                  action="/api/auth/login" 
+                  method="post"
+                  data-api-login="/api/auth/login"
+                  novalidate>
+                
+                <div class="form-group">
+                    <label for="login-username">Username atau Email</label>
+                    <input type="text" 
+                           id="login-username" 
+                           name="username" 
+                           required 
+                           autocomplete="username"
+                           placeholder="Masukkan username atau email">
+                </div>
+
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               id="login-password" 
+                               name="password" 
+                               required 
+                               autocomplete="current-password"
+                               placeholder="Masukkan password">
+                        <button type="button" 
+                                class="password-toggle" 
+                                aria-label="Tampilkan password"
+                                data-target="login-password">
+                            <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Masuk</button>
+            </form>
+        </div>
+
+        <!-- Signup Panel -->
+        <div role="tabpanel" 
+             id="panel-signup" 
+             class="tab-panel" 
+             aria-labelledby="tab-signup"
+             aria-hidden="true">
+            
+            <div class="error-message" id="signup-error" role="alert" aria-live="polite"></div>
+
+            <form id="signup-form" 
+                  action="/api/auth/signup" 
+                  method="post"
+                  data-api-signup="/api/auth/signup"
+                  novalidate>
+                
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" 
+                           id="signup-email" 
+                           name="email" 
+                           required 
+                           autocomplete="email"
+                           placeholder="nama@email.com">
+                    <div class="hint">Gunakan email aktif untuk verifikasi</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-username">Username</label>
+                    <input type="text" 
+                           id="signup-username" 
+                           name="username" 
+                           required 
+                           autocomplete="username"
+                           minlength="3"
+                           placeholder="Pilih username unik">
+                    <div class="hint">Minimal 3 karakter</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" 
+                               id="signup-password" 
+                               name="password" 
+                               required 
+                               autocomplete="new-password"
+                               minlength="6"
+                               placeholder="Minimal 6 karakter">
+                        <button type="button" 
+                                class="password-toggle" 
+                                aria-label="Tampilkan password"
+                                data-target="signup-password">
+                            <i data-lucide="eye" style="width:18px;height:18px;"></i>
+                        </button>
+                    </div>
+                    <div class="hint">Minimal 6 karakter, gunakan kombinasi huruf dan angka</div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Daftar</button>
+            </form>
+        </div>
+    </div>
+
+    <noscript>
+        <style>
+            .password-toggle { display: none; }
+        </style>
+    </noscript>
+
+    <script>
+        // Tab switching
+        const tabs = document.querySelectorAll('[role="tab"]');
+        const panels = document.querySelectorAll('[role="tabpanel"]');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab));
+            tab.addEventListener('keydown', handleTabKeydown);
+        });
+
+        function switchTab(selectedTab) {
+            tabs.forEach(tab => {
+                const isSelected = tab === selectedTab;
+                tab.setAttribute('aria-selected', isSelected);
+                tab.setAttribute('tabindex', isSelected ? '0' : '-1');
+            });
+
+            panels.forEach(panel => {
+                const shouldShow = panel.id === selectedTab.getAttribute('aria-controls');
+                panel.setAttribute('aria-hidden', !shouldShow);
+            });
+
+            selectedTab.focus();
+        }
+
+        function handleTabKeydown(e) {
+            const currentIndex = Array.from(tabs).indexOf(e.target);
+            let newIndex;
+
+            if (e.key === 'ArrowRight') {
+                newIndex = (currentIndex + 1) % tabs.length;
+                switchTab(tabs[newIndex]);
+            } else if (e.key === 'ArrowLeft') {
+                newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+                switchTab(tabs[newIndex]);
+            }
+        }
+
+        // Password toggle
+        document.querySelectorAll('.password-toggle').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetId = btn.dataset.target;
+                const input = document.getElementById(targetId);
+                const isPassword = input.type === 'password';
+                input.type = isPassword ? 'text' : 'password';
+                const icon = btn.querySelector('i');
+                icon.setAttribute('data-lucide', isPassword ? 'eye-off' : 'eye');
+                lucide.createIcons();
+                btn.setAttribute('aria-label', isPassword ? 'Sembunyikan password' : 'Tampilkan password');
+            });
+        });
+
+        // Login form
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(loginForm);
+            const data = {
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
+
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Memproses...';
+            loginError.classList.remove('show');
+
+            try {
+                const response = await fetch(loginForm.dataset.apiLogin, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('username', result.username);
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error(result.detail || 'Login gagal');
+                }
+            } catch (error) {
+                loginError.textContent = error.message || 'Terjadi kesalahan. Silakan coba lagi.';
+                loginError.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Masuk';
+            }
+        });
+
+        // Signup form
+        const signupForm = document.getElementById('signup-form');
+        const signupError = document.getElementById('signup-error');
+
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(signupForm);
+            const data = {
+                email: formData.get('email'),
+                username: formData.get('username'),
+                password: formData.get('password')
+            };
+
+            if (data.username.length < 3) {
+                signupError.textContent = 'Username minimal 3 karakter';
+                signupError.classList.add('show');
+                return;
+            }
+
+            if (data.password.length < 6) {
+                signupError.textContent = 'Password minimal 6 karakter';
+                signupError.classList.add('show');
+                return;
+            }
+
+            const submitBtn = signupForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mendaftar...';
+            signupError.classList.remove('show');
+
+            try {
+                const response = await fetch(signupForm.dataset.apiSignup, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('token', result.token);
+                    localStorage.setItem('username', result.username);
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error(result.detail || 'Pendaftaran gagal');
+                }
+            } catch (error) {
+                signupError.textContent = error.message || 'Terjadi kesalahan. Silakan coba lagi.';
+                signupError.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Daftar';
+            }
+        });
+
+        // Check if already logged in
+        if (localStorage.getItem('token')) {
+            window.location.href = '/dashboard';
+        }
+        
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

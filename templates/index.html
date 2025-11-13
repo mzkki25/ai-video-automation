@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Creator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --gradient-1: #667eea;
+            --gradient-2: #764ba2;
+            --gradient-3: #f093fb;
+            --gradient-4: #4facfe;
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text: #1a202c;
+            --text-light: #4a5568;
+            --shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            --radius: 20px;
+            --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-sans);
+            background: linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-2) 50%, var(--gradient-3) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(118, 75, 162, 0.3) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        body::after {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(79, 172, 254, 0.3) 0%, transparent 70%);
+            bottom: -150px;
+            left: -150px;
+            animation: float 15s infinite ease-in-out reverse;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(50px, 50px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            font-size: 48px;
+            font-weight: 800;
+            color: white;
+            margin-bottom: 12px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+
+        .card-grid {
+            display: grid;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px;
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+        }
+
+        .card-icon {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--gradient-4) 0%, var(--gradient-1) 100%);
+            color: white;
+        }
+
+        .card:nth-child(2) .card-icon {
+            background: linear-gradient(135deg, var(--gradient-3) 0%, var(--gradient-2) 100%);
+        }
+
+        .card:nth-child(3) .card-icon {
+            background: linear-gradient(135deg, var(--gradient-1) 0%, var(--gradient-3) 100%);
+        }
+
+        .card-content {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+
+        .card-desc {
+            color: var(--text-light);
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .card-arrow {
+            flex-shrink: 0;
+            color: var(--text-light);
+            transition: transform 0.3s;
+        }
+
+        .card:hover .card-arrow {
+            transform: translateX(8px);
+        }
+
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            margin-top: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 { font-size: 36px; }
+            .header p { font-size: 16px; }
+            .card {
+                flex-direction: column;
+                text-align: center;
+                padding: 24px;
+            }
+            .card-arrow { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <i data-lucide="sparkles" style="width:40px;height:40px;color:#667eea;"></i>
+            </div>
+            <h1>AI Video Automation</h1>
+            <p>Transform your ideas into stunning videos with AI-powered automation</p>
+        </div>
+
+        <div class="card-grid">
+            <a href="/create-product" class="card">
+                <div class="card-icon">
+                    <i data-lucide="package" style="width:32px;height:32px;"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">Product Video</div>
+                    <div class="card-desc">Create engaging promotional videos for your products with images, descriptions, and compelling narratives</div>
+                </div>
+                <div class="card-arrow">
+                    <i data-lucide="arrow-right" style="width:24px;height:24px;"></i>
+                </div>
+            </a>
+
+            <a href="/create-non-product" class="card">
+                <div class="card-icon">
+                    <i data-lucide="file-text" style="width:32px;height:32px;"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">Content Video</div>
+                    <div class="card-desc">Generate informative videos for tips, tutorials, educational content, or general information sharing</div>
+                </div>
+                <div class="card-arrow">
+                    <i data-lucide="arrow-right" style="width:24px;height:24px;"></i>
+                </div>
+            </a>
+
+            <a href="/dashboard" class="card">
+                <div class="card-icon">
+                    <i data-lucide="layout-dashboard" style="width:32px;height:32px;"></i>
+                </div>
+                <div class="card-content">
+                    <div class="card-title">My Dashboard</div>
+                    <div class="card-desc">View, manage, and track all your created videos in one centralized location</div>
+                </div>
+                <div class="card-arrow">
+                    <i data-lucide="arrow-right" style="width:24px;height:24px;"></i>
+                </div>
+            </a>
+        </div>
+
+        <div class="footer">
+            Powered by AI • Create videos in minutes, not hours
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/auth';
+        }
+        
+        lucide.createIcons();
+    </script>
+</body>
+</html>

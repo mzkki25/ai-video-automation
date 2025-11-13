@@ -1,0 +1,915 @@
+<!-- FILE: dashboard.html -->
+<!--
+Template: Video History Dashboard
+Purpose: Display user's video history with search, filter, and bulk actions
+
+Expected API endpoints:
+- GET /api/videos?q=&status= -> [{id, title, thumbnail, status, created_at, workflow_id, product_name}]
+- DELETE /api/videos -> { ids: [...] } -> { deleted: N }
+- GET /api/workflow-status/{workflow_id} -> { status, progress, video_url }
+
+Server context variables:
+- {{ username }} - Current user's username (optional, can use localStorage)
+- {{ token }} - JWT token (optional, can use localStorage)
+
+Testing checklist:
+✓ Auth check redirects to /auth if no token
+✓ Search debounces and filters results
+✓ Status filter works
+✓ Bulk selection and delete work
+✓ Polling updates processing videos
+✓ Video player modal opens for completed videos
+✓ Responsive grid layout
+-->
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Video Creator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-primary-dark: #4f46e5;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --text: #0f172a;
+            --muted: #6b7280;
+            --radius: 14px;
+            --shadow: 0 6px 18px rgba(15,23,42,0.06);
+            --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .username {
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #d1d5db;
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg);
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        /* Controls */
+        .controls {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 24px;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        select {
+            padding: 10px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+        }
+
+        .bulk-actions {
+            display: none;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #f0f9ff;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+
+        .bulk-actions.show {
+            display: flex;
+        }
+
+        .selected-count {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        /* Video Grid */
+        .video-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 80px;
+        }
+
+        .video-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .video-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(15,23,42,0.1);
+        }
+
+        .video-thumbnail {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            background: #e5e7eb;
+        }
+
+        .video-content {
+            padding: 12px;
+        }
+
+        .video-header {
+            display: flex;
+            align-items: start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .video-checkbox {
+            margin-top: 4px;
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .video-info {
+            flex: 1;
+        }
+
+        .video-title {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .video-product {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .video-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-completed {
+            background: #d1e7dd;
+            color: #0f5132;
+        }
+
+        .badge-error {
+            background: #f8d7da;
+            color: #842029;
+        }
+
+        .video-date {
+            font-size: 13px;
+            color: var(--muted);
+        }
+
+        .video-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        /* FAB */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 50;
+        }
+
+        .fab-button {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--color-primary);
+            color: white;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+            transition: all 0.2s;
+        }
+
+        .fab-button:hover {
+            background: var(--color-primary-dark);
+            transform: scale(1.1);
+        }
+
+        .fab-menu {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            min-width: 200px;
+            display: none;
+        }
+
+        .fab-menu.show {
+            display: block;
+        }
+
+        .fab-menu a {
+            display: block;
+            padding: 12px 16px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+
+        .fab-menu a:hover {
+            background: var(--bg);
+        }
+
+        .fab-menu a:first-child {
+            border-radius: 8px 8px 0 0;
+        }
+
+        .fab-menu a:last-child {
+            border-radius: 0 0 8px 8px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        video {
+            width: 100%;
+            max-height: 70vh;
+            border-radius: 8px;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state h2 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            color: var(--muted);
+            margin-bottom: 24px;
+        }
+
+        /* Loading skeleton */
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        .skeleton-card {
+            height: 280px;
+            border-radius: var(--radius);
+        }
+
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 12px 16px;
+            }
+
+            .navbar-brand {
+                font-size: 18px;
+            }
+
+            .username {
+                display: none;
+            }
+
+            .container {
+                padding: 16px;
+            }
+
+            .video-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-row {
+                flex-direction: column;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="/dashboard" class="navbar-brand"><i data-lucide="video" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Video Creator</a>
+        <div class="navbar-right">
+            <span class="username" id="username-display">{{ username }}</span>
+            <button class="btn btn-outline" onclick="logout()"><i data-lucide="log-out" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Keluar</button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Controls -->
+        <div class="controls">
+            <div class="controls-row">
+                <div class="search-box">
+                    <input type="search" 
+                           id="search-input" 
+                           placeholder="Cari video..."
+                           aria-label="Cari video">
+                </div>
+                <select id="status-filter" aria-label="Filter status">
+                    <option value="">Semua Status</option>
+                    <option value="processing">Processing</option>
+                    <option value="completed">Completed</option>
+                    <option value="error">Error</option>
+                </select>
+            </div>
+
+            <div class="bulk-actions" id="bulk-actions">
+                <input type="checkbox" id="select-all" aria-label="Pilih semua">
+                <span class="selected-count" id="selected-count" aria-live="polite">0 dipilih</span>
+                <button class="btn btn-danger btn-sm" onclick="bulkDelete()"><i data-lucide="trash-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Hapus Terpilih</button>
+            </div>
+        </div>
+
+        <!-- Video Grid -->
+        <div class="video-grid" id="video-grid" role="list" data-api-videos="/api/videos">
+            <!-- Loading skeletons -->
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+            <div class="skeleton skeleton-card"></div>
+        </div>
+    </div>
+
+    <!-- FAB -->
+    <div class="fab">
+        <button class="fab-button" 
+                onclick="toggleFabMenu()" 
+                aria-label="Buat video baru"
+                aria-expanded="false"
+                id="fab-button">
+            +
+        </button>
+        <div class="fab-menu" id="fab-menu" role="menu">
+            <a href="/create-product" role="menuitem"><i data-lucide="package" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"></i>Dengan Produk</a>
+            <a href="/create-non-product" role="menuitem"><i data-lucide="file-text" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"></i>Tanpa Produk</a>
+        </div>
+    </div>
+
+    <!-- Video Player Modal -->
+    <div class="modal" id="video-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">Video</h2>
+                <button class="modal-close" onclick="closeModal()" aria-label="Tutup">&times;</button>
+            </div>
+            <video id="video-player" controls></video>
+        </div>
+    </div>
+
+    <!-- Confirm Delete Modal -->
+    <div class="modal" id="confirm-modal" role="dialog" aria-modal="true">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Konfirmasi Hapus</h2>
+                <button class="modal-close" onclick="closeConfirmModal()" aria-label="Tutup">&times;</button>
+            </div>
+            <p style="margin-bottom: 16px;">Yakin ingin menghapus video terpilih?</p>
+            <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="btn btn-outline" onclick="closeConfirmModal()">Batal</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auth check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/auth';
+        }
+
+        // Display username
+        const username = localStorage.getItem('username') || '{{ username }}';
+        if (username && username !== '{{ username }}') {
+            document.getElementById('username-display').textContent = username;
+        }
+
+        // API helper
+        async function apiFetch(url, opts = {}, retry = 2) {
+            opts.headers = {
+                ...opts.headers,
+                'Authorization': `Bearer ${token}`
+            };
+
+            for (let i = 0; i <= retry; i++) {
+                try {
+                    const response = await fetch(url, opts);
+                    if (response.status === 401) {
+                        logout();
+                        return;
+                    }
+                    return response;
+                } catch (error) {
+                    if (i === retry) throw error;
+                    await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('username');
+            window.location.href = '/auth';
+        }
+
+        // Load videos
+        let allVideos = [];
+        let selectedIds = new Set();
+
+        async function loadVideos(query = '', status = '') {
+            const grid = document.getElementById('video-grid');
+            
+            try {
+                const url = new URL('/api/videos', window.location.origin);
+                if (query) url.searchParams.set('search', query);
+                if (status) url.searchParams.set('status', status);
+
+                const response = await apiFetch(url.toString());
+                const videos = await response.json();
+                
+                allVideos = videos;
+                renderVideos(videos);
+                
+                // Start polling for processing videos
+                startPolling();
+            } catch (error) {
+                grid.innerHTML = '<div class="empty-state"><h2>Error</h2><p>Gagal memuat video</p></div>';
+            }
+        }
+
+        function renderVideos(videos) {
+            const grid = document.getElementById('video-grid');
+            
+            if (videos.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <i data-lucide="video-off" style="width:48px;height:48px;color:var(--muted);margin-bottom:16px;"></i>
+                        <h2>Belum ada video</h2>
+                        <p>Mulai buat video pertama Anda</p>
+                        <button class="btn btn-primary" onclick="window.location.href='/create-product'"><i data-lucide="plus" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Buat Video</button>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            grid.innerHTML = videos.map(video => `
+                <div class="video-card" role="listitem">
+                    ${video.thumbnail ? `<img src="${video.thumbnail}" alt="${video.title}" class="video-thumbnail">` : ''}
+                    <div class="video-content">
+                        <div class="video-header">
+                            <input type="checkbox" 
+                                   class="video-checkbox" 
+                                   data-id="${video.id}"
+                                   aria-label="Pilih ${video.title}"
+                                   ${selectedIds.has(video.id) ? 'checked' : ''}>
+                            <div class="video-info">
+                                <div class="video-title">${video.title}</div>
+                                ${video.product_name ? `<div class="video-product">${video.product_name}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="video-meta">
+                            <span class="badge badge-${video.status}">${video.status}</span>
+                            <span class="video-date">${formatDate(video.created_at)}</span>
+                        </div>
+                        <div class="video-actions">
+                            ${video.status === 'completed' ? 
+                                `<button class="btn btn-primary btn-sm" onclick="playVideo('${video.id}', '${video.video_url}', '${video.title}')"><i data-lucide="play" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Lihat</button>` : 
+                                ''}
+                            <button class="btn btn-outline btn-sm" onclick="deleteVideo('${video.id}')"><i data-lucide="trash-2" style="width:14px;height:14px;vertical-align:middle;margin-right:4px;"></i>Hapus</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Attach checkbox listeners
+            document.querySelectorAll('.video-checkbox').forEach(cb => {
+                cb.addEventListener('change', handleCheckboxChange);
+            });
+            
+            // Initialize Lucide icons
+            lucide.createIcons();
+        }
+
+        // Search with debounce
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value;
+                const status = document.getElementById('status-filter').value;
+                loadVideos(query, status);
+            }, 300);
+        });
+
+        // Status filter
+        document.getElementById('status-filter').addEventListener('change', (e) => {
+            const query = document.getElementById('search-input').value;
+            const status = e.target.value;
+            loadVideos(query, status);
+        });
+
+        // Checkbox handling
+        function handleCheckboxChange(e) {
+            const id = e.target.dataset.id;
+            if (e.target.checked) {
+                selectedIds.add(id);
+            } else {
+                selectedIds.delete(id);
+            }
+            updateBulkActions();
+        }
+
+        document.getElementById('select-all').addEventListener('change', (e) => {
+            const checkboxes = document.querySelectorAll('.video-checkbox');
+            checkboxes.forEach(cb => {
+                cb.checked = e.target.checked;
+                if (e.target.checked) {
+                    selectedIds.add(cb.dataset.id);
+                } else {
+                    selectedIds.delete(cb.dataset.id);
+                }
+            });
+            updateBulkActions();
+        });
+
+        function updateBulkActions() {
+            const bulkActions = document.getElementById('bulk-actions');
+            const count = selectedIds.size;
+            
+            if (count > 0) {
+                bulkActions.classList.add('show');
+                document.getElementById('selected-count').textContent = `${count} dipilih`;
+            } else {
+                bulkActions.classList.remove('show');
+            }
+        }
+
+        // Bulk delete
+        let deleteCallback = null;
+
+        function bulkDelete() {
+            if (selectedIds.size === 0) return;
+            document.getElementById('confirm-modal').classList.add('show');
+            deleteCallback = async () => {
+                try {
+                    const response = await apiFetch('/api/videos', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: Array.from(selectedIds) })
+                    });
+                    
+                    if (response.ok) {
+                        selectedIds.clear();
+                        loadVideos();
+                    }
+                } catch (error) {
+                    alert('Gagal menghapus video');
+                }
+            };
+        }
+
+        function deleteVideo(id) {
+            selectedIds.clear();
+            selectedIds.add(id);
+            document.getElementById('confirm-modal').classList.add('show');
+            deleteCallback = async () => {
+                try {
+                    const response = await apiFetch('/api/videos', {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ids: [id] })
+                    });
+                    
+                    if (response.ok) {
+                        selectedIds.clear();
+                        loadVideos();
+                    }
+                } catch (error) {
+                    alert('Gagal menghapus video');
+                }
+            };
+        }
+
+        function confirmDelete() {
+            if (deleteCallback) deleteCallback();
+            closeConfirmModal();
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.remove('show');
+            deleteCallback = null;
+        }
+
+        // FAB menu
+        function toggleFabMenu() {
+            const menu = document.getElementById('fab-menu');
+            const button = document.getElementById('fab-button');
+            const isOpen = menu.classList.toggle('show');
+            button.setAttribute('aria-expanded', isOpen);
+        }
+
+        // Close FAB menu when clicking outside
+        document.addEventListener('click', (e) => {
+            const fab = document.querySelector('.fab');
+            if (!fab.contains(e.target)) {
+                document.getElementById('fab-menu').classList.remove('show');
+                document.getElementById('fab-button').setAttribute('aria-expanded', 'false');
+            }
+        });
+
+        // Video player modal
+        function playVideo(id, url, title) {
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('video-player').src = url;
+            document.getElementById('video-modal').classList.add('show');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('video-modal');
+            const player = document.getElementById('video-player');
+            player.pause();
+            player.src = '';
+            modal.classList.remove('show');
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('video-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'video-modal') closeModal();
+        });
+
+        document.getElementById('confirm-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'confirm-modal') closeConfirmModal();
+        });
+
+        // Polling for processing videos
+        let pollingInterval;
+
+        function startPolling() {
+            if (pollingInterval) clearInterval(pollingInterval);
+            
+            const processingVideos = allVideos.filter(v => v.status === 'processing');
+            if (processingVideos.length === 0) return;
+
+            pollingInterval = setInterval(async () => {
+                for (const video of processingVideos) {
+                    try {
+                        const response = await apiFetch(`/api/workflow-status/${video.workflow_id}`);
+                        const status = await response.json();
+                        
+                        if (status.status !== 'processing') {
+                            loadVideos();
+                            break;
+                        }
+                    } catch (error) {
+                        console.error('Polling error:', error);
+                    }
+                }
+            }, 10000); // Poll every 10 seconds
+        }
+
+        // Format date
+        function formatDate(isoString) {
+            const date = new Date(isoString);
+            const now = new Date();
+            const diff = now - date;
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            
+            if (days === 0) return 'Hari ini';
+            if (days === 1) return 'Kemarin';
+            if (days < 7) return `${days} hari lalu`;
+            
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        // Initial load
+        loadVideos();
+        
+        // Initialize Lucide icons on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollingInterval) clearInterval(pollingInterval);
+        });
+    </script>
+</body>
+</html>

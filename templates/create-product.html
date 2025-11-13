@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buat Video - Dengan Produk</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --color-primary: #6366f1;
+            --color-primary-dark: #4f46e5;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --success: #198754;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --text: #0f172a;
+            --muted: #6b7280;
+            --radius: 14px;
+            --shadow: 0 6px 18px rgba(15,23,42,0.06);
+            --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--card-bg);
+            box-shadow: var(--shadow);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .breadcrumb {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .breadcrumb a {
+            color: var(--color-primary);
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 32px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e5e7eb;
+            z-index: 0;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e5e7eb;
+            color: var(--muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .step.active .step-circle {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .step.completed .step-circle {
+            background: var(--success);
+            color: white;
+        }
+
+        .step-label {
+            font-size: 13px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .step.active .step-label {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .scene-bg-input {
+            min-height: 60px;
+            font-size: 13px;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .file-upload {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .file-upload:hover {
+            border-color: var(--color-primary);
+            background: #f9fafb;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .file-preview {
+            margin-top: 12px;
+            display: none;
+        }
+
+        .file-preview.show {
+            display: block;
+        }
+
+        .file-preview img {
+            max-width: 200px;
+            border-radius: 8px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #d1d5db;
+            color: var(--text);
+        }
+
+        .btn-outline:hover {
+            background: var(--bg);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+            margin-top: 24px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--color-primary);
+            transition: width 0.3s;
+        }
+
+        .status-log {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        .status-log-item {
+            padding: 4px 0;
+            color: var(--muted);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 100%;
+            max-height: 80vh;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--muted);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+        }
+
+        .template-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-card:hover {
+            border-color: var(--color-primary);
+            box-shadow: var(--shadow);
+        }
+
+        .template-card img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .template-name {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .scene-editor {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .scene-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .scene-title {
+            font-weight: 600;
+            color: var(--color-primary);
+        }
+
+        video {
+            width: 100%;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .step-indicator {
+                flex-wrap: wrap;
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-group .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/dashboard" class="navbar-brand"><i data-lucide="video" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Video Creator</a>
+        <div class="breadcrumb">
+            <a href="/dashboard">Dashboard</a>
+            <span>/</span>
+            <span>Buat Video</span>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <div class="step-indicator">
+                <div class="step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Input Data</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Edit Script</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Progress</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Selesai</div>
+                </div>
+            </div>
+
+            <form id="video-form" 
+                  data-api-upload="/api/upload"
+                  data-api-generate-script="/api/video/generate-script"
+                  data-api-start-workflow="/api/video/start-workflow"
+                  data-api-templates="/api/templates">
+
+                <!-- Step 1: Input Form -->
+                <div class="step-content active" data-step="1">
+                    <h2 style="margin-bottom: 24px;">Informasi Produk</h2>
+
+                    <div class="form-group">
+                        <label for="nama_produk">Nama Produk *</label>
+                        <input type="text" id="nama_produk" name="nama_produk" required placeholder="Contoh: Sepatu Olahraga Premium">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="target_audiens">Target Audiens *</label>
+                        <input type="text" id="target_audiens" name="target_audiens" required placeholder="Contoh: Pria 25-40 tahun, aktif berolahraga">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="usp">USP (Keunggulan Produk) *</label>
+                        <textarea id="usp" name="usp" required placeholder="Jelaskan keunggulan unik produk Anda"></textarea>
+                        <div class="hint">Tip: Gunakan bahasa singkat dan jelas</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cta">Call to Action *</label>
+                        <input type="text" id="cta" name="cta" required placeholder="Contoh: Beli Sekarang di Tokopedia">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Gambar Produk * (Max 3MB)</label>
+                        <div class="file-upload" onclick="document.getElementById('product_image').click()">
+                            <input type="file" id="product_image" name="product_image" accept="image/*" required>
+                            <div><i data-lucide="image" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Klik untuk upload gambar produk</div>
+                        </div>
+                        <div class="file-preview" id="product-preview"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Avatar (Opsional, Max 3MB)</label>
+                        <div class="file-upload" onclick="document.getElementById('avatar_image').click()">
+                            <input type="file" id="avatar_image" name="avatar_image" accept="image/*">
+                            <div><i data-lucide="user" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Klik untuk upload avatar</div>
+                        </div>
+                        <div class="file-preview" id="avatar-preview"></div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline" onclick="openTemplateModal()"><i data-lucide="file-text" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Gunakan Template</button>
+                        <button type="button" class="btn btn-outline" onclick="saveAsTemplate()"><i data-lucide="save" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Simpan Template</button>
+                        <button type="button" class="btn btn-primary" onclick="generateScript()">Generate Script <i data-lucide="arrow-right" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 2: Script Editor -->
+                <div class="step-content" data-step="2">
+                    <h2 style="margin-bottom: 24px;">Edit Script Video</h2>
+
+                    <div class="form-group">
+                        <label for="video_title">Judul Video</label>
+                        <input type="text" id="video_title" name="video_title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="full_script">Script Lengkap</label>
+                        <textarea id="full_script" name="full_script" rows="6"></textarea>
+                    </div>
+
+                    <h3 style="margin: 24px 0 16px;">Scene Editor (4 Scenes)</h3>
+                    <div id="scenes-container"></div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline" onclick="goToStep(1)"><i data-lucide="arrow-left" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Kembali</button>
+                        <button type="button" class="btn btn-primary" onclick="startWorkflow()">Buat Video <i data-lucide="arrow-right" style="width:16px;height:16px;vertical-align:middle;margin-left:4px;"></i></button>
+                    </div>
+                </div>
+
+                <!-- Step 3: Progress -->
+                <div class="step-content" data-step="3">
+                    <h2 style="margin-bottom: 24px;">Membuat Video...</h2>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 24px;">
+                        <div style="font-size: 18px; font-weight: 600; margin-bottom: 8px;" id="progress-status">Memulai...</div>
+                        <div style="color: var(--muted);" id="progress-percent">0%</div>
+                    </div>
+
+                    <div class="status-log" id="status-log"></div>
+                </div>
+
+                <!-- Step 4: Result -->
+                <div class="step-content" data-step="4">
+                    <h2 style="margin-bottom: 24px;"><i data-lucide="check-circle" style="width:28px;height:28px;vertical-align:middle;margin-right:8px;color:var(--success);"></i>Video Berhasil Dibuat!</h2>
+
+                    <video id="result-video" controls></video>
+
+                    <div style="margin-bottom: 24px;">
+                        <div style="font-size: 14px; color: var(--muted); margin-bottom: 8px;">
+                            Ukuran file: <span id="file-size">-</span>
+                        </div>
+                    </div>
+
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline" onclick="window.location.href='/dashboard'"><i data-lucide="arrow-left" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Dashboard</button>
+                        <button type="button" class="btn btn-outline" onclick="downloadVideo()"><i data-lucide="download" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Download</button>
+                        <button type="button" class="btn btn-primary" onclick="resetForm()"><i data-lucide="plus" style="width:16px;height:16px;vertical-align:middle;margin-right:4px;"></i>Buat Video Baru</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div class="modal" id="template-modal" role="dialog" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Pilih Template</h2>
+                <button class="modal-close" onclick="closeTemplateModal()">&times;</button>
+            </div>
+            <div class="template-grid" id="template-grid">
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted);">
+                    Belum ada template tersimpan
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Save Template Modal -->
+    <div class="modal" id="save-template-modal" role="dialog" aria-modal="true">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Simpan Template</h2>
+                <button class="modal-close" onclick="closeSaveTemplateModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="template_name">Nama Template</label>
+                <input type="text" id="template_name" placeholder="Contoh: Template Sepatu">
+            </div>
+            <div class="form-group">
+                <label for="template_desc">Deskripsi (Opsional)</label>
+                <textarea id="template_desc" rows="3"></textarea>
+            </div>
+            <div class="btn-group">
+                <button class="btn btn-outline" onclick="closeSaveTemplateModal()">Batal</button>
+                <button class="btn btn-primary" onclick="confirmSaveTemplate()">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        if (!token) window.location.href = '/auth';
+
+        let currentStep = 1;
+        let workflowId = null;
+        let videoData = {};
+        let pollingInterval = null;
+
+        // File upload previews
+        document.getElementById('product_image').addEventListener('change', (e) => {
+            previewFile(e.target.files[0], 'product-preview');
+        });
+
+        document.getElementById('avatar_image').addEventListener('change', (e) => {
+            previewFile(e.target.files[0], 'avatar-preview');
+        });
+
+        function previewFile(file, previewId) {
+            if (!file) return;
+            
+            if (file.size > 3 * 1024 * 1024) {
+                alert('Ukuran file maksimal 3MB');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = document.getElementById(previewId);
+                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+                preview.classList.add('show');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Generate Script
+        async function generateScript() {
+            const form = document.getElementById('video-form');
+            const formData = new FormData(form);
+
+            if (!formData.get('nama_produk') || !formData.get('target_audiens') || 
+                !formData.get('usp') || !formData.get('cta') || !formData.get('product_image')) {
+                alert('Mohon lengkapi semua field yang wajib diisi');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+
+            try {
+                const response = await fetch(form.dataset.apiGenerateScript, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Generate script gagal');
+
+                const result = await response.json();
+                console.log('Script result:', result);
+                videoData = result;
+
+                // Set title and full script
+                document.getElementById('video_title').value = result.title || '';
+                document.getElementById('full_script').value = result.script || '';
+
+                // Render scenes
+                if (result.scripts && Array.isArray(result.scripts)) {
+                    renderScenes(result.scripts);
+                } else {
+                    console.error('Invalid scripts format:', result);
+                    alert('Format script tidak valid');
+                    return;
+                }
+                
+                goToStep(2);
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Script →';
+            }
+        }
+
+        function renderScenes(scenes) {
+            const container = document.getElementById('scenes-container');
+            container.innerHTML = scenes.map((scene, i) => {
+                const titleOverlay = (scene.title_overlay || '').replace(/"/g, '&quot;');
+                const audioScript = (scene.audio_script || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const bgPrompt = (scene.background_image_prompt || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                return `
+                    <div class="scene-editor">
+                        <div class="scene-header">
+                            <div class="scene-title">Scene ${scene.scene || i + 1}</div>
+                        </div>
+                        <div class="form-group">
+                            <label>Title Overlay</label>
+                            <input type="text" class="scene-title-input" data-index="${i}" value="${titleOverlay}">
+                        </div>
+                        <div class="form-group">
+                            <label>Audio Script</label>
+                            <textarea class="scene-audio-input" data-index="${i}" rows="3">${audioScript}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Background Image Prompt</label>
+                            <textarea class="scene-bg-input" data-index="${i}" rows="3">${bgPrompt}</textarea>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Start Workflow
+        async function startWorkflow() {
+            const form = document.getElementById('video-form');
+            const formData = new FormData(form);
+
+            // Collect edited script data
+            const editedScripts = [];
+            document.querySelectorAll('.scene-editor').forEach((editor, i) => {
+                editedScripts.push({
+                    scene: i + 1,
+                    title_overlay: editor.querySelector('.scene-title-input').value,
+                    audio_script: editor.querySelector('.scene-audio-input').value,
+                    background_image_prompt: editor.querySelector('.scene-bg-input').value
+                });
+            });
+
+            const scriptData = {
+                title: document.getElementById('video_title').value,
+                script: document.getElementById('full_script').value,
+                scripts: editedScripts
+            };
+
+            formData.set('script', JSON.stringify(scriptData));
+
+            const btn = event.target;
+            btn.disabled = true;
+
+            try {
+                const response = await fetch(form.dataset.apiStartWorkflow, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Start workflow gagal');
+
+                const result = await response.json();
+                workflowId = result.workflow_id;
+
+                goToStep(3);
+                pollWorkflow();
+            } catch (error) {
+                alert(error.message);
+                btn.disabled = false;
+            }
+        }
+
+        // Poll Workflow
+        async function pollWorkflow() {
+            let retries = 0;
+            const maxRetries = 3;
+
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/video/workflow-status/${workflowId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (!response.ok) throw new Error('Polling failed');
+
+                    const status = await response.json();
+                    updateProgress(status);
+
+                    if (status.status === 'completed') {
+                        clearInterval(pollingInterval);
+                        showResult(status);
+                    } else if (status.status === 'error') {
+                        clearInterval(pollingInterval);
+                        alert('Error: ' + status.error);
+                    }
+
+                    retries = 0;
+                } catch (error) {
+                    retries++;
+                    if (retries >= maxRetries) {
+                        clearInterval(pollingInterval);
+                        alert('Gagal memantau progress. Silakan cek dashboard.');
+                    }
+                }
+            }, 5000);
+        }
+
+        function updateProgress(status) {
+            const progress = status.progress || 0;
+            document.getElementById('progress-fill').style.width = progress + '%';
+            document.getElementById('progress-percent').textContent = progress + '%';
+            document.getElementById('progress-status').textContent = status.message || 'Processing...';
+
+            const log = document.getElementById('status-log');
+            const item = document.createElement('div');
+            item.className = 'status-log-item';
+            item.textContent = `[${new Date().toLocaleTimeString()}] ${status.message}`;
+            log.appendChild(item);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function showResult(status) {
+            const videoUrl = status.data?.final_video_url || status.video_url;
+            if (!videoUrl) {
+                console.error('No video URL in response:', status);
+                alert('Video URL tidak ditemukan');
+                return;
+            }
+            document.getElementById('result-video').src = videoUrl;
+            document.getElementById('file-size').textContent = status.file_size || '-';
+            goToStep(4);
+        }
+
+        function goToStep(step) {
+            document.querySelectorAll('.step').forEach(s => {
+                const stepNum = parseInt(s.dataset.step);
+                s.classList.remove('active', 'completed');
+                if (stepNum === step) s.classList.add('active');
+                if (stepNum < step) s.classList.add('completed');
+            });
+
+            document.querySelectorAll('.step-content').forEach(c => {
+                c.classList.remove('active');
+                if (parseInt(c.dataset.step) === step) c.classList.add('active');
+            });
+
+            currentStep = step;
+        }
+
+        function resetForm() {
+            document.getElementById('video-form').reset();
+            document.querySelectorAll('.file-preview').forEach(p => p.classList.remove('show'));
+            workflowId = null;
+            videoData = {};
+            goToStep(1);
+        }
+
+        function downloadVideo() {
+            const videoUrl = document.getElementById('result-video').src;
+            window.open(videoUrl, '_blank');
+        }
+
+        // Template functions
+        function openTemplateModal() {
+            document.getElementById('template-modal').classList.add('show');
+            loadTemplates();
+        }
+
+        function closeTemplateModal() {
+            document.getElementById('template-modal').classList.remove('show');
+        }
+
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/api/templates', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const templates = await response.json();
+                
+                const grid = document.getElementById('template-grid');
+                if (templates.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px; color: var(--muted);">Belum ada template tersimpan</div>';
+                } else {
+                    grid.innerHTML = templates.map(t => `
+                        <div class="template-card" onclick="useTemplate('${t.id}')">
+                            <div class="template-name">${t.name}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Load templates error:', error);
+            }
+        }
+
+        function saveAsTemplate() {
+            document.getElementById('save-template-modal').classList.add('show');
+        }
+
+        function closeSaveTemplateModal() {
+            document.getElementById('save-template-modal').classList.remove('show');
+        }
+
+        async function confirmSaveTemplate() {
+            const name = document.getElementById('template_name').value;
+            if (!name) {
+                alert('Nama template wajib diisi');
+                return;
+            }
+
+            const form = document.getElementById('video-form');
+            const formData = new FormData(form);
+            const data = {
+                name,
+                description: document.getElementById('template_desc').value,
+                data: Object.fromEntries(formData)
+            };
+
+            try {
+                await fetch('/api/templates', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                closeSaveTemplateModal();
+                alert('Template berhasil disimpan');
+            } catch (error) {
+                alert('Gagal menyimpan template');
+            }
+        }
+
+        async function useTemplate(id) {
+            try {
+                const response = await fetch(`/api/templates/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const template = await response.json();
+                
+                Object.keys(template.data).forEach(key => {
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) input.value = template.data[key];
+                });
+                
+                closeTemplateModal();
+            } catch (error) {
+                alert('Gagal memuat template');
+            }
+        }
+
+        window.addEventListener('beforeunload', () => {
+            if (pollingInterval) clearInterval(pollingInterval);
+        });
+        
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>
