@@ -112,7 +112,7 @@ class WorkflowService:
     
     async def _wait_for_heygen_completion(self, workflow_id: str, controller: WorkflowProductController, heygen_videos):
         """Wait for Heygen videos to complete"""
-        max_attempts = 60
+        max_attempts = 300
         attempt = 0
         
         self.update_status(workflow_id, "processing", "Waiting for Heygen videos to complete...", 20)
@@ -143,7 +143,7 @@ class WorkflowService:
             attempt += 1
             progress = int(20 + (attempt * 20 / max_attempts))
             self.update_status(workflow_id, "processing", f"Waiting for Heygen videos... ({attempt}/{max_attempts})", progress)
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
         
         logger.error(f"Workflow {workflow_id}: Timeout waiting for Heygen videos")
         self.update_status(workflow_id, "error", "Timeout waiting for Heygen videos", 0)
@@ -151,7 +151,7 @@ class WorkflowService:
     
     async def _wait_for_creatomate_completion(self, workflow_id: str, controller: WorkflowProductController, creatomate_videos):
         """Wait for Creatomate videos to complete"""
-        max_attempts = 60
+        max_attempts = 300
         attempt = 0
         
         self.update_status(workflow_id, "processing", "Waiting for Creatomate videos to complete...", 70)
@@ -182,7 +182,7 @@ class WorkflowService:
             attempt += 1
             progress = int(70 + (attempt * 20 / max_attempts))
             self.update_status(workflow_id, "processing", f"Waiting for Creatomate videos... ({attempt}/{max_attempts})", progress)
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
         
         logger.error(f"Workflow {workflow_id}: Timeout waiting for Creatomate videos")
         self.update_status(workflow_id, "error", "Timeout waiting for Creatomate videos", 0)

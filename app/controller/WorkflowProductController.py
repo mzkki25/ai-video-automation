@@ -27,9 +27,20 @@ class WorkflowProductController:
             self.product_url = ""
             print(f"⚠️ Non-product mode: no product image")
             
-        if not image_request.avatar_image or (isinstance(image_request.avatar_image, str) and (not image_request.avatar_image or image_request.avatar_image.startswith('temp_'))):
+        # Handle avatar - can be URL string or file path
+        if not image_request.avatar_image:
             self.avatar_url = "https://ai-automation.tos-ap-southeast-3.bytepluses.com/generated_images/20251105_140634_avatar_sample.jpg"
             print(f"✅ Using default avatar URL")
+        elif isinstance(image_request.avatar_image, str):
+            if image_request.avatar_image.startswith('http'):
+                self.avatar_url = image_request.avatar_image
+                print(f"✅ Using preset avatar URL: {self.avatar_url}")
+            elif image_request.avatar_image.startswith('temp_'):
+                self.avatar_url = "https://ai-automation.tos-ap-southeast-3.bytepluses.com/generated_images/20251105_140634_avatar_sample.jpg"
+                print(f"✅ Using default avatar URL (temp file)")
+            else:
+                self.avatar_url = tos_storage.upload_to_tos_storage(image_request.avatar_image, "nanobanana")
+                print(f"✅ Avatar uploaded: {self.avatar_url}")
         else:
             self.avatar_url = tos_storage.upload_to_tos_storage(image_request.avatar_image, "nanobanana")
             print(f"✅ Avatar uploaded: {self.avatar_url}")

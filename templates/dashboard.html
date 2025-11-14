@@ -557,6 +557,7 @@ Testing checklist:
         <div class="fab-menu" id="fab-menu" role="menu">
             <a href="/create-product" role="menuitem"><i data-lucide="package" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"></i>Dengan Produk</a>
             <a href="/create-non-product" role="menuitem"><i data-lucide="file-text" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"></i>Tanpa Produk</a>
+            <a href="#" onclick="event.preventDefault(); openAvatarPreview();" role="menuitem"><i data-lucide="users" style="width:16px;height:16px;vertical-align:middle;margin-right:8px;"></i>Preview Avatar</a>
         </div>
     </div>
 
@@ -582,6 +583,42 @@ Testing checklist:
             <div style="display: flex; gap: 8px; justify-content: flex-end;">
                 <button class="btn btn-outline" onclick="closeConfirmModal()">Batal</button>
                 <button class="btn btn-danger" onclick="confirmDelete()">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Avatar Preview Modal -->
+    <div class="modal" id="avatar-modal" role="dialog" aria-modal="true">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Avatar yang Tersedia</h2>
+                <button class="modal-close" onclick="closeAvatarModal()" aria-label="Tutup">&times;</button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 16px;">
+                <div style="text-align: center;">
+                    <img src="https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mas_indo.jpg" 
+                         alt="Mas Indo" 
+                         style="width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 14px;">Mas Indo</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ci_chindo.jpg" 
+                         alt="Ci Chindo" 
+                         style="width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 14px;">Ci Chindo</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ko_chindo.png" 
+                         alt="Ko Chindo" 
+                         style="width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 14px;">Ko Chindo</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mba_indo.jpg" 
+                         alt="Mba Indo" 
+                         style="width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 12px; margin-bottom: 8px;">
+                    <div style="font-weight: 600; font-size: 14px;">Mba Indo</div>
+                </div>
             </div>
         </div>
     </div>
@@ -856,6 +893,20 @@ Testing checklist:
 
         document.getElementById('confirm-modal').addEventListener('click', (e) => {
             if (e.target.id === 'confirm-modal') closeConfirmModal();
+        });
+
+        // Avatar preview modal
+        function openAvatarPreview() {
+            document.getElementById('fab-menu').classList.remove('show');
+            document.getElementById('avatar-modal').classList.add('show');
+        }
+
+        function closeAvatarModal() {
+            document.getElementById('avatar-modal').classList.remove('show');
+        }
+
+        document.getElementById('avatar-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'avatar-modal') closeAvatarModal();
         });
 
         // Polling for processing videos

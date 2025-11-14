@@ -31,7 +31,8 @@ class VideoController:
         product_image: UploadFile,
         talking_photo_id: Optional[str] = None,
         voice_id: Optional[str] = None,
-        avatar_image: Optional[UploadFile] = None
+        avatar_image: Optional[UploadFile] = None,
+        avatar_url: Optional[str] = None
     ) -> ScriptReturn:
         """Generate video script"""
         try:
@@ -52,7 +53,7 @@ class VideoController:
             
             image_request = InputImage(
                 product_image=product_image_path,
-                avatar_image=avatar_image_path
+                avatar_image=avatar_url if avatar_url else avatar_image_path
             )
             
             # Generate script
@@ -78,7 +79,8 @@ class VideoController:
         cta: str,
         talking_photo_id: Optional[str] = None,
         voice_id: Optional[str] = None,
-        avatar_image: Optional[UploadFile] = None
+        avatar_image: Optional[UploadFile] = None,
+        avatar_url: Optional[str] = None
     ) -> ScriptReturn:
         """Generate video script for non-product video"""
         try:
@@ -99,7 +101,7 @@ class VideoController:
             
             image_request = InputImage(
                 product_image=None,
-                avatar_image=avatar_image_path
+                avatar_image=avatar_url if avatar_url else avatar_image_path
             )
             
             # Generate script
@@ -138,6 +140,7 @@ class VideoController:
         talking_photo_id: Optional[str] = None,
         voice_id: Optional[str] = None,
         avatar_image: Optional[UploadFile] = None,
+        avatar_url: Optional[str] = None,
         script: Optional[str] = None
     ) -> WorkflowStartResponse:
         """Start workflow"""
@@ -172,7 +175,7 @@ class VideoController:
             
             image_request = InputImage(
                 product_image=product_image_path,
-                avatar_image=avatar_image_path
+                avatar_image=avatar_url if avatar_url else avatar_image_path
             )
             
             controller = WorkflowProductController(payload, image_request)
@@ -217,6 +220,7 @@ class VideoController:
         talking_photo_id: Optional[str] = None,
         voice_id: Optional[str] = None,
         avatar_image: Optional[UploadFile] = None,
+        avatar_url: Optional[str] = None,
         script: Optional[str] = None
     ) -> WorkflowStartResponse:
         """Start workflow for non-product video"""
@@ -251,7 +255,7 @@ class VideoController:
             
             image_request = InputImage(
                 product_image=None,
-                avatar_image=avatar_image_path
+                avatar_image=avatar_url if avatar_url else avatar_image_path
             )
             
             controller = WorkflowProductController(payload, image_request, is_non_product=True)

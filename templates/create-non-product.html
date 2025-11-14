@@ -465,12 +465,15 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Avatar (Opsional, Max 3MB)</label>
-                    <div class="file-upload" onclick="document.getElementById('avatar_image').click()">
-                        <input type="file" id="avatar_image" name="avatar_image" accept="image/*">
-                        <div><i data-lucide="user" style="width:20px;height:20px;vertical-align:middle;margin-right:8px;"></i>Klik untuk upload avatar</div>
-                    </div>
-                    <div class="file-preview" id="avatar-preview"></div>
+                    <label for="avatar_selection">Pilih Avatar</label>
+                    <select id="avatar_selection" name="avatar_selection">
+                        <option value="">-- Pilih Avatar --</option>
+                        <option value="mas_indo|08e816816f5f496e8757268f2e0b633a|76db764087a14ff683b6964c6ca62537|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mas_indo.jpg">Mas Indo</option>
+                        <option value="ci_chindo|d7d6ae6ac0f64d1a9b1a8b26760096eb|cae19979cd0e4203b2bcc702eaead13d|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ci_chindo.jpg">Ci Chindo</option>
+                        <option value="ko_chindo|5df1a994b0ae425dbe7f71c6d8dd2563|ea33ba36a756400e8f9c131f955cd6b8|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ko_chindo.png">Ko Chindo</option>
+                        <option value="mba_indo|1b81540177114ec4bfda2a7a514e0e6b|8183274ca6d947aa8c9ba7ccd5f3fdea|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mba_indo.jpg">Mba Indo</option>
+                    </select>
+                    <div class="hint">Pilih avatar untuk video Anda</div>
                 </div>
 
                 <div class="btn-group">
@@ -581,24 +584,6 @@
     <script>
         const token = localStorage.getItem('token');
         if (!token) window.location.href = '/auth';
-
-        document.getElementById('avatar_image').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            if (file.size > 3 * 1024 * 1024) {
-                alert('Ukuran file maksimal 3MB');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const preview = document.getElementById('avatar-preview');
-                preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
-                preview.classList.add('show');
-            };
-            reader.readAsDataURL(file);
-        });
         
         lucide.createIcons();
 
@@ -611,6 +596,15 @@
         async function generateScript() {
             const form = document.getElementById('video-form');
             const formData = new FormData(form);
+            
+            // Parse avatar selection
+            const avatarSelect = document.getElementById('avatar_selection').value;
+            if (avatarSelect) {
+                const [name, voiceId, photoId, avatarUrl] = avatarSelect.split('|');
+                formData.set('voice_id', voiceId);
+                formData.set('talking_photo_id', photoId);
+                formData.set('avatar_url', avatarUrl);
+            }
 
             if (!formData.get('nama_produk') || !formData.get('target_audiens') || 
                 !formData.get('usp') || !formData.get('cta')) {
@@ -685,6 +679,15 @@
         async function startWorkflow() {
             const form = document.getElementById('video-form');
             const formData = new FormData(form);
+            
+            // Parse avatar selection
+            const avatarSelect = document.getElementById('avatar_selection').value;
+            if (avatarSelect) {
+                const [name, voiceId, photoId, avatarUrl] = avatarSelect.split('|');
+                formData.set('voice_id', voiceId);
+                formData.set('talking_photo_id', photoId);
+                formData.set('avatar_url', avatarUrl);
+            }
 
             const editedScripts = [];
             document.querySelectorAll('.scene-editor').forEach((editor, i) => {

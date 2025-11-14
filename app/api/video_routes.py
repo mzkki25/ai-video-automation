@@ -23,6 +23,7 @@ async def generate_script(
     voice_id: Optional[str] = Form(None),
     product_image: UploadFile = File(...),
     avatar_image: Optional[UploadFile] = File(None),
+    avatar_url: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -30,7 +31,7 @@ async def generate_script(
     video_controller = VideoController(db, current_user)
     result = await video_controller.generate_script(
         nama_produk, target_audiens, usp, cta, product_image,
-        talking_photo_id, voice_id, avatar_image
+        talking_photo_id, voice_id, avatar_image, avatar_url
     )
     
     # Flatten response to match frontend expectations
@@ -51,6 +52,7 @@ async def generate_script_non_product(
     talking_photo_id: Optional[str] = Form(None),
     voice_id: Optional[str] = Form(None),
     avatar_image: Optional[UploadFile] = File(None),
+    avatar_url: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -58,7 +60,7 @@ async def generate_script_non_product(
     video_controller = VideoController(db, current_user)
     result = await video_controller.generate_script_non_product(
         nama_produk, target_audiens, usp, cta,
-        talking_photo_id, voice_id, avatar_image
+        talking_photo_id, voice_id, avatar_image, avatar_url
     )
     
     return {
@@ -90,6 +92,7 @@ async def start_workflow(
     voice_id: Optional[str] = Form(None),
     product_image: UploadFile = File(...),
     avatar_image: Optional[UploadFile] = File(None),
+    avatar_url: Optional[str] = Form(None),
     script: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -98,7 +101,7 @@ async def start_workflow(
     video_controller = VideoController(db, current_user)
     return await video_controller.start_workflow(
         background_tasks, nama_produk, target_audiens, usp, cta, product_image,
-        talking_photo_id, voice_id, avatar_image, script
+        talking_photo_id, voice_id, avatar_image, avatar_url, script
     )
 
 @router.post("/start-workflow-non-product", response_model=WorkflowStartResponse)
@@ -111,6 +114,7 @@ async def start_workflow_non_product(
     talking_photo_id: Optional[str] = Form(None),
     voice_id: Optional[str] = Form(None),
     avatar_image: Optional[UploadFile] = File(None),
+    avatar_url: Optional[str] = Form(None),
     script: Optional[str] = Form(None),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -119,7 +123,7 @@ async def start_workflow_non_product(
     video_controller = VideoController(db, current_user)
     return await video_controller.start_workflow_non_product(
         background_tasks, nama_produk, target_audiens, usp, cta,
-        talking_photo_id, voice_id, avatar_image, script
+        talking_photo_id, voice_id, avatar_image, avatar_url, script
     )
 
 @router.get("/workflow-status/{workflow_id}", response_model=WorkflowStatusResponse)
