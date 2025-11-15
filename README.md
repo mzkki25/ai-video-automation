@@ -775,8 +775,8 @@ curl -X GET http://localhost:8000/api/history/videos \
 ## Support
 
 For issues or questions:
-- GitHub Issues: [repository-url]
-- Email: support@example.com
+- GitHub Issues: https://github.com/mzkki25/ai-video-automation
+- Email: akmalm2003@gmail.com
 - Documentation: http://localhost:8000/docs
 
 ---
