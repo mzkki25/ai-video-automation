@@ -6,8 +6,8 @@ class HeygenService:
     def __init__(self, talking_photo_id = None, voice_id = None):
         self.api_key = setting.HEYGEN_API_KEY
         self.type = "talking_photo"
-        self.talking_photo_id = "6aae8e2d91c947b38130593dc261f3b9" if talking_photo_id is None else talking_photo_id
-        self.voice_id = "8507f6910b7e409b85f0f2bdb4d637a6" if voice_id is None else voice_id
+        self.talking_photo_id = "cae19979cd0e4203b2bcc702eaead13d" if talking_photo_id is None else talking_photo_id
+        self.voice_id = "d7d6ae6ac0f64d1a9b1a8b26760096eb" if voice_id is None else voice_id
         
     async def generate_heygen_video_title(self, title: str, script: str):
         print(f"\n=== HeyGen Generate Video ===")

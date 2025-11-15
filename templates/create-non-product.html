@@ -468,10 +468,6 @@
                     <label for="avatar_selection">Pilih Avatar</label>
                     <select id="avatar_selection" name="avatar_selection">
                         <option value="">-- Pilih Avatar --</option>
-                        <option value="mas_indo|08e816816f5f496e8757268f2e0b633a|76db764087a14ff683b6964c6ca62537|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mas_indo.jpg">Mas Indo</option>
-                        <option value="ci_chindo|d7d6ae6ac0f64d1a9b1a8b26760096eb|cae19979cd0e4203b2bcc702eaead13d|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ci_chindo.jpg">Ci Chindo</option>
-                        <option value="ko_chindo|5df1a994b0ae425dbe7f71c6d8dd2563|ea33ba36a756400e8f9c131f955cd6b8|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/ko_chindo.png">Ko Chindo</option>
-                        <option value="mba_indo|1b81540177114ec4bfda2a7a514e0e6b|8183274ca6d947aa8c9ba7ccd5f3fdea|https://ai-automation.tos-ap-southeast-3.bytepluses.com/avatar_list/mba_indo.jpg">Mba Indo</option>
                     </select>
                     <div class="hint">Pilih avatar untuk video Anda</div>
                 </div>
@@ -588,6 +584,26 @@
         lucide.createIcons();
 
         let currentStep = 1;
+        
+        // Load avatars
+        async function loadAvatars() {
+            try {
+                const response = await fetch('/api/avatars');
+                const data = await response.json();
+                const select = document.getElementById('avatar_selection');
+                
+                data.avatars.forEach(avatar => {
+                    const option = document.createElement('option');
+                    option.value = `${avatar.name}|${avatar.voice_id}|${avatar.talking_photo_id}|${avatar.avatar_url}`;
+                    option.textContent = avatar.name;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load avatars:', error);
+            }
+        }
+        
+        loadAvatars();
         let workflowId = null;
         let videoData = {};
         let pollingInterval = null;
